@@ -1,0 +1,19 @@
+<mjml>
+  <mj-body background-color="#f6f7fb">
+    <mj-section background-color="#ffffff" padding="20px" border-radius="8px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold">Welcome {{name}}</mj-text>
+        <mj-text>
+          Thanks for creating an account. Please confirm your email by clicking the button below.
+        </mj-text>
+        <mj-button href="{{verifyLink}}" background-color="#000000" color="#ffffff">Verify email</mj-button>
+        <mj-text font-size="13px" color="#888888">If you didn't create an account, you can ignore this email.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding-top="10px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#aaaaaa">© {{year}} {{companyName}}</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

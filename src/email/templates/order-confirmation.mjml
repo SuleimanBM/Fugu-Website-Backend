@@ -1,0 +1,36 @@
+<mjml>
+  <mj-body background-color="#f6f7fb">
+    <mj-section background-color="#ffffff" padding="18px" border-radius="8px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold">Order received</mj-text>
+        <mj-text>
+          Hi {{name}}, we received your order <strong>{{orderId}}</strong>. Total: <strong>{{orderTotal}}</strong>
+        </mj-text>
+
+        <mj-table>
+          <tr style="border-bottom:1px solid #ecedee;">
+            <th align="left">Item</th>
+            <th align="center">Qty</th>
+            <th align="right">Price</th>
+          </tr>
+          {{#each items}}
+          <tr>
+            <td>{{this.title}}</td>
+            <td align="center">{{this.qty}}</td>
+            <td align="right">{{this.price}}</td>
+          </tr>
+          {{/each}}
+        </mj-table>
+
+        {{#if orderLink}}
+          <mj-button href="{{orderLink}}" background-color="#000000" color="#fff">View order</mj-button>
+        {{/if}}
+      </mj-column>
+    </mj-section>
+    <mj-section padding-top="10px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#aaaaaa">© {{year}} {{companyName}}</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

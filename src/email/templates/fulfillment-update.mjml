@@ -1,0 +1,68 @@
+<mjml>
+  <mj-head>
+    <mj-title>Order Update — {{ companyName }}</mj-title>
+    <mj-attributes>
+      <mj-all font-family="Georgia, serif" />
+      <mj-text font-size="15px" color="#1a1a1a" line-height="1.7" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f5f0eb">
+
+    <mj-section padding="32px 0 0">
+      <mj-column>
+        <mj-text align="center" font-size="22px" font-weight="bold" color="#2d2d2d">
+          {{ companyName }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" border-radius="8px" padding="40px 48px" css-class="main">
+      <mj-column>
+
+        <mj-text font-size="20px" font-weight="bold" padding-bottom="8px">
+          Order update{{#if name}}, {{ name }}{{/if}}
+        </mj-text>
+
+        <mj-text padding-bottom="24px" color="#555555">
+          Your order <strong>#{{ orderId }}</strong> has a new status update.
+        </mj-text>
+
+        <!-- Status badge -->
+        <mj-section background-color="{{ statusColor }}" border-radius="6px" padding="16px 24px">
+          <mj-column>
+            <mj-text align="center" font-size="16px" font-weight="bold" color="#ffffff">
+              {{ statusLabel }}
+            </mj-text>
+            <mj-text align="center" font-size="13px" color="#ffffffcc" padding-top="4px">
+              {{ statusMessage }}
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+        <!-- Order summary -->
+        <mj-text padding-top="24px" padding-bottom="4px" font-weight="bold">
+          Order total
+        </mj-text>
+        <mj-text color="#555555">
+          GHS {{ orderTotal }}
+        </mj-text>
+
+        {{#if orderLink}}
+        <mj-button background-color="#2d2d2d" color="#ffffff" border-radius="4px" padding-top="24px" href="{{ orderLink }}">
+          View your order
+        </mj-button>
+        {{/if}}
+
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="24px 0 32px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#999999">
+          © {{ year }} {{ companyName }}. All rights reserved.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>
