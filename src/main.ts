@@ -11,7 +11,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       process.env.FRONTEND_URL ?? 'https://fugu-website-m99b.vercel.app',
-      'http://localhost:3000',
+      'https://fugu-website-m99b.vercel.app/','http://localhost:3000',
     ],
     credentials: true,
   });
