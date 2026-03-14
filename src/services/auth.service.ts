@@ -213,6 +213,7 @@ export class AuthService {
 
     // 3. Find or create user
     let user = await this.em.findOne(User, { $or: [{ googleId }, { email }] });
+    const isNewUser = !user;
 
     if (!user) {
       user = this.em.create(User, {
@@ -234,6 +235,15 @@ export class AuthService {
       .digest('hex');
     await this.em.flush();
 
-    return { user: user.toDto(), token, refreshToken };
-  }
+    // Send welcome email only for brand new accounts
+    if (isNewUser) {
+      this.emailService
+        .sendSignupEmail(user.email, {
+          name: user.name,
+          verifyLink: `${process.env.APP_URL}/account`,
+        })
+        .catch(() => { });
+    }
+
+    return { user: user.toDto(), token, refreshToken };  }
 }

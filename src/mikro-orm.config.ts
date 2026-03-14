@@ -12,12 +12,21 @@ const config = new ConfigService();
 export default defineConfig({
   entities,
   clientUrl: config.getOrThrow<string>('DB_URL'),
+  schema: 'public',
   driver: PostgreSqlDriver,
   extensions: [SeedManager],
   seeder: {
     path: Utils.detectTsNode() ? 'src/seeders' : 'dist/seeders',
     defaultSeeder: 'DatabaseSeeder',
   },
+  driverOptions: {
+    connection: {
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    },
+  },
   // Log SQL queries in development
   debug: process.env.NODE_ENV === 'development',
+  
 });

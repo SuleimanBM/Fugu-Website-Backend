@@ -65,7 +65,20 @@ export class OrderService {
       const user = await em.findOne(User, { id: userId });
       if (!user) throw new BadRequestException('User not found');
 
-      const items = cart.items.getItems();
+      // Reload the cart inside the transaction's forked EM so the items
+      // collection is fully populated in this EM's identity map.
+      // Using the cart loaded by the outer this.em won't work here because
+      // em.transactional() forks a new EntityManager context.
+      const cartInTx = await em.findOne(
+        Cart,
+        { user: userId, isActive: true },
+        { populate: ['items', 'items.variant', 'items.variant.product'] },
+      );
+      if (!cartInTx || cartInTx.items.length === 0) {
+        throw new BadRequestException('Cart is empty');
+      }
+
+      const items = cartInTx.items.getItems();
       let subtotal = 0;
 
       const order = em.create(Order, {
@@ -109,7 +122,7 @@ export class OrderService {
 
       await em.flush();
       await this.cartService.deactivate(cart);
-
+      console.log(order.toDto())
       return order.toDto();
     });
   }
@@ -231,29 +244,29 @@ export class OrderService {
         const STATUS_COPY = {
           [FulfillmentStatus.PROCESSING]: {
             label: 'Processing',
-              message: 'We have received your order and are getting it ready.',
-                color: '#6366f1',
-        },
+            message: 'We have received your order and are getting it ready.',
+            color: '#6366f1',
+          },
           [FulfillmentStatus.READY_FOR_PICKUP]: {
             label: 'Ready for Pickup',
-              message: 'Your order is ready. You can collect it at our location.',
-                color: '#f59e0b',
-        },
+            message: 'Your order is ready. You can collect it at our location.',
+            color: '#f59e0b',
+          },
           [FulfillmentStatus.ON_ROUTE]: {
             label: 'On the Way',
-              message: 'Your order has been dispatched and is on its way to you.',
-                color: '#3b82f6',
-        },
+            message: 'Your order has been dispatched and is on its way to you.',
+            color: '#3b82f6',
+          },
           [FulfillmentStatus.DELIVERED]: {
             label: 'Delivered',
-              message: 'Your order has been delivered. Enjoy your purchase!',
-                color: '#10b981',
-        },
+            message: 'Your order has been delivered. Enjoy your purchase!',
+            color: '#10b981',
+          },
           [FulfillmentStatus.CANCELLED]: {
             label: 'Cancelled',
-              message: 'Your order has been cancelled. Contact us if this was unexpected.',
-                color: '#ef4444',
-        },
+            message: 'Your order has been cancelled. Contact us if this was unexpected.',
+            color: '#ef4444',
+          },
         };
 
         const copy = STATUS_COPY[fulfillmentStatus];

@@ -8,6 +8,7 @@ import * as Handlebars from 'handlebars';
 import { htmlToText } from 'html-to-text';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
+
 type MailPayload = {
     to: string;
     subject: string;
@@ -22,7 +23,7 @@ Handlebars.registerHelper('year', () => new Date().getFullYear());
 Handlebars.registerHelper('companyName', () => process.env.APP_NAME ?? 'Fugu-Smock');
 
 @Injectable()
-export class EmailService implements OnModuleInit {
+export class EmailService {
     private logger = new Logger('EmailService');
     private transporter: nodemailer.Transporter;
     private templateCache = new Map<string, Handlebars.TemplateDelegate>();
@@ -36,7 +37,6 @@ export class EmailService implements OnModuleInit {
     }
 
     async onModuleInit() {
-        // prefer SMTP config if present
         const host = process.env.SMTP_HOST;
         if (host) {
             const port = Number(process.env.SMTP_PORT ?? 587);
@@ -44,32 +44,32 @@ export class EmailService implements OnModuleInit {
             const authUser = process.env.SMTP_USER;
             const authPass = process.env.SMTP_PASS;
 
-            const config: SMTPTransport.Options = {
-                host,
-                port,
-                secure,
-            };
-
+            const config: SMTPTransport.Options = { host, port, secure };
             if (authUser && authPass) {
                 (config as any).auth = { user: authUser, pass: authPass };
             }
 
             this.transporter = nodemailer.createTransport(config);
 
-            // verify connection
             try {
                 await this.transporter.verify();
-                this.logger.log('SMTP transporter verified');
+                this.logger.log(`SMTP transporter ready (${host}:${port})`);
             } catch (err) {
-                this.logger.error('Failed to verify SMTP transporter, falling back to json transport', err as any);
-                this.transporter = nodemailer.createTransport({ jsonTransport: true });
+                // SendGrid verify can fail even when credentials are correct —
+                // log the warning but keep the transporter rather than falling back
+                this.logger.warn(
+                    `SMTP verify returned an error — transporter kept anyway. ` +
+                    `If emails fail, check SMTP_USER/SMTP_PASS. Error: ${(err as Error).message}`,
+                );
             }
         } else {
-            this.logger.warn('SMTP not configured — using JSON transport (emails will not be delivered). Set SMTP_HOST/SMTP_USER/SMTP_PASS to enable real emails.');
+            this.logger.warn(
+                'SMTP not configured — using JSON transport (emails will not be delivered). ' +
+                'Set SMTP_HOST/SMTP_USER/SMTP_PASS to enable real emails.',
+            );
             this.transporter = nodemailer.createTransport({ jsonTransport: true });
         }
     }
-    
 
     async sendMail(payload: MailPayload) {
         const from = payload.from ?? this.fromAddress;

@@ -23,6 +23,7 @@ import { FulfillmentStatus } from '../enums/fulfillmentStatus.enum';
 import { CustomOrderStatus } from '../enums/customOrderStatus.enum';
 import { Size } from '../enums/sizes.enum';
 import { Express } from 'express';
+import { PosthogService } from 'src/services/posthog.service';
 
 type MulterFile = Express.Multer.File;
 
@@ -36,6 +37,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly orderService: OrderService,
     private readonly customOrderService: CustomOrderService,
+    private readonly posthogService: PosthogService,
   ) { }
 
   // ── DASHBOARD ──────────────────────────────────────────────────────────────
@@ -241,5 +243,49 @@ export class AdminController {
     },
   ) {
     return this.customOrderService.adminUpdate(id, body);
+  }
+
+  // ── POSTHOG WEBSITE ANALYTICS ─────────────────────────────────────────────
+
+  /** GET /api/admin/analytics/website-summary?days=30 */
+  @Get('analytics/website-summary')
+  getWebsiteSummary(@Query('days') days?: string) {
+    return this.posthogService.getWebsiteSummary(days ? Number(days) : 30);
+  }
+
+  /** GET /api/admin/analytics/daily-traffic?days=30 */
+  @Get('analytics/daily-traffic')
+  getDailyTraffic(@Query('days') days?: string) {
+    return this.posthogService.getDailyTraffic(days ? Number(days) : 30);
+  }
+
+  /** GET /api/admin/analytics/top-pages?days=30&limit=15 */
+  @Get('analytics/top-pages')
+  getTopPages(@Query('days') days?: string, @Query('limit') limit?: string) {
+    return this.posthogService.getTopPages(days ? Number(days) : 30, limit ? Number(limit) : 15);
+  }
+
+  /** GET /api/admin/analytics/top-viewed-products?days=30&limit=8 */
+  @Get('analytics/top-viewed-products')
+  getTopViewedProducts(@Query('days') days?: string, @Query('limit') limit?: string) {
+    return this.posthogService.getTopViewedProducts(days ? Number(days) : 30, limit ? Number(limit) : 8);
+  }
+
+  /** GET /api/admin/analytics/conversion-funnel?days=30 */
+  @Get('analytics/conversion-funnel')
+  getConversionFunnel(@Query('days') days?: string) {
+    return this.posthogService.getConversionFunnel(days ? Number(days) : 30);
+  }
+
+  /** GET /api/admin/analytics/top-searches?days=30&limit=10 */
+  @Get('analytics/top-searches')
+  getTopSearches(@Query('days') days?: string, @Query('limit') limit?: string) {
+    return this.posthogService.getTopSearches(days ? Number(days) : 30, limit ? Number(limit) : 10);
+  }
+
+  /** GET /api/admin/analytics/add-to-cart-events?days=30&limit=8 */
+  @Get('analytics/add-to-cart-events')
+  getAddToCartEvents(@Query('days') days?: string, @Query('limit') limit?: string) {
+    return this.posthogService.getAddToCartEvents(days ? Number(days) : 30, limit ? Number(limit) : 8);
   }
 }

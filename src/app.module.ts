@@ -46,6 +46,7 @@ import { CategoryRepository } from './repositories/category.repository';
 import { JwtStrategy } from './strategies/jwt-strategy';
 import { JwtAuthGuard } from './guards/jwt-guard';
 import { RolesGuard } from './guards/roles-guard';
+import { PosthogService } from './services/posthog.service';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { RolesGuard } from './guards/roles-guard';
     AdminService,
     EmailService,
     CustomOrderService,
+    PosthogService,
 
     // Repositories
     UserRepository,
