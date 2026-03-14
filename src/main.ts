@@ -10,11 +10,13 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      process.env.FRONTEND_URL ?? 'http://localhost:5173',
+      process.env.FRONTEND_URL ?? 'https://fugu-website-m99b.vercel.app',
       'http://localhost:3000',
     ],
     credentials: true,
   });
+
+  app.enableShutdownHooks();
 
   app.setGlobalPrefix('api');
 
