@@ -1,13 +1,21 @@
-import { User } from './user.entity';
-import { Product } from './product.entity';
-import { ProductVariant } from './productVariant.entity';
-import { Category } from './category.entity';
-import { Cart } from './cart.entity';
-import { CartItem } from './cartItem.entity';
-import { Order } from './order.entity';
-import { OrderItem } from './orderItem.entity';
-import { CustomOrder } from './customOrder.entity';
+export { User }           from './user.entity';
+export { Product, FuguGender } from './product.entity';
+export { ProductVariant } from './productVariant.entity';
+export { Category }       from './category.entity';
+export { Cart }           from './cart.entity';
+export { CartItem }       from './cartItem.entity';
+export { Order }          from './order.entity';
+export { OrderItem }      from './orderItem.entity';
+export { CustomOrder }    from './customOrder.entity';
 
-export { User, Product, ProductVariant, Category, Cart, CartItem, Order, OrderItem, CustomOrder };
-
-export default [User, Product, ProductVariant, Category, Cart, CartItem, Order, OrderItem, CustomOrder];
+export default [
+  require('./user.entity').User,
+  require('./product.entity').Product,
+  require('./productVariant.entity').ProductVariant,
+  require('./category.entity').Category,
+  require('./cart.entity').Cart,
+  require('./cartItem.entity').CartItem,
+  require('./order.entity').Order,
+  require('./orderItem.entity').OrderItem,
+  require('./customOrder.entity').CustomOrder,
+];

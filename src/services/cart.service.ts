@@ -7,9 +7,19 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Cart } from '../entities/cart.entity';
 import { CartItem } from '../entities/cartItem.entity';
 import { ProductVariant } from '../entities/productVariant.entity';
+import { Product } from '../entities/product.entity';
 import { User } from '../entities/user.entity';
 import { CartRepository } from '../repositories/cart.repository';
 import { InjectRepository } from '@mikro-orm/nestjs';
+
+export interface AddItemInput {
+  productId:     string;
+  variantId:     string;
+  quantity:      number;
+  withHat?:      boolean;
+  customLength?: number;
+  customWidth?:  number;
+}
 
 @Injectable()
 export class CartService {
@@ -19,24 +29,18 @@ export class CartService {
     private readonly cartRepo: CartRepository,
   ) {}
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PRIVATE HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Private helpers ──────────────────────────────────────────────────────
 
   private async getOrCreate(userId: string): Promise<Cart> {
     let cart = await this.cartRepo.findActiveByUser(userId);
     if (!cart) {
-      this.em.create(Cart, {
-        user: this.em.getReference(User, userId),
-      });
+      this.em.create(Cart, { user: this.em.getReference(User, userId) });
       await this.em.flush();
-      // Reload with relations
       cart = (await this.cartRepo.findActiveByUser(userId)) as any;
     }
     return cart as unknown as Cart;
   }
 
-  /** Serialise cart into the shape the frontend expects: { items: CartItem[] } */
   private serialise(cart: Cart) {
     return {
       items: cart.items.isInitialized()
@@ -45,67 +49,82 @@ export class CartService {
     };
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PUBLIC API
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Public API ───────────────────────────────────────────────────────────
 
-  /** GET /api/cart → { items: CartItem[] } */
   async getCart(userId: string) {
     const cart = await this.getOrCreate(userId);
     return this.serialise(cart);
   }
 
-  /** POST /api/cart/items  { product_id, variant_id, quantity } */
-  async addItem(
-    userId: string,
-    productId: string,
-    variantId: string,
-    quantity: number,
-  ) {
-    if (quantity <= 0) throw new BadRequestException('Quantity must be ≥ 1');
+  async addItem(userId: string, input: AddItemInput) {
+    if (!input.variantId?.trim()) {
+      throw new BadRequestException('A size must be selected before adding to cart');
+    }
+    if (input.quantity <= 0) {
+      throw new BadRequestException('Quantity must be at least 1');
+    }
 
     return this.em.transactional(async em => {
       const cart = await this.getOrCreate(userId);
 
+      const cartInTx = await em.findOne(
+        Cart,
+        { id: cart.id },
+        { populate: ['items', 'items.variant', 'items.variant.product'] },
+      );
+      if (!cartInTx) throw new BadRequestException('Cart not found');
+
       const variant = await em.findOne(
         ProductVariant,
-        { id: variantId },
+        { id: input.variantId },
         { populate: ['product'] },
       );
-      if (!variant) throw new NotFoundException('Variant not found');
-      if (variant.stock < quantity)
-        throw new BadRequestException('Insufficient stock');
+      if (!variant || !variant.isActive) {
+        throw new BadRequestException('Selected variant is not available');
+      }
 
-      // Check if this variant is already in the cart
-      const existing = cart.items.isInitialized()
-        ? cart.items.getItems().find(i => i.variant.id === variantId)
-        : null;
+      const product = variant.product as Product;
+
+      // Price = variant price + hat add-on if requested
+      const hatPrice =
+        input.withHat && product.hatAddonPrice ? Number(product.hatAddonPrice) : 0;
+      const priceAtAdd = Number(variant.price) + hatPrice;
+
+      // If identical item already in cart, increment quantity
+      const existing = cartInTx.items.getItems().find(
+        i =>
+          i.id === input.variantId &&
+          i.withHat === (input.withHat ?? false),
+      );
 
       if (existing) {
-        existing.quantity += quantity;
+        existing.quantity += input.quantity;
       } else {
-        const price =
-          Number((variant.product as any).price ?? 0) +
-          Number(variant.priceDiff ?? 0);
-
         em.create(CartItem, {
-          cart,
+          cart:         cartInTx,
           variant,
-          productId,
-          quantity,
-          priceAtAdd: price,
+          productId:    product.id,
+          quantity:     input.quantity,
+          priceAtAdd,
+          withHat:      input.withHat      ?? false,
+          customLength: input.customLength,
+          customWidth:  input.customWidth,
         });
       }
 
       await em.flush();
 
-      // Reload and return fresh cart
-      const fresh = await this.cartRepo.findActiveByUser(userId);
-      return this.serialise(fresh!);
+      const fresh = await em.findOne(
+        Cart,
+        { id: cartInTx.id },
+        { populate: ['items', 'items.variant'] },
+      );
+      return {
+        items: (fresh?.items.getItems() ?? []).map(i => i.toDto()),
+      };
     });
   }
 
-  /** PATCH /api/cart/items/:itemId  { quantity } */
   async updateItem(userId: string, itemId: string, quantity: number) {
     if (quantity < 0) throw new BadRequestException('Invalid quantity');
 
@@ -119,9 +138,6 @@ export class CartService {
     if (quantity === 0) {
       this.em.remove(item);
     } else {
-      if (item.variant.stock < quantity) {
-        throw new BadRequestException('Insufficient stock');
-      }
       item.quantity = quantity;
     }
 
@@ -130,12 +146,10 @@ export class CartService {
     return this.serialise(fresh!);
   }
 
-  /** DELETE /api/cart/items/:itemId */
   async removeItem(userId: string, itemId: string) {
     return this.updateItem(userId, itemId, 0);
   }
 
-  /** DELETE /api/cart */
   async clearCart(userId: string) {
     const cart = await this.getOrCreate(userId);
     for (const item of cart.items.getItems()) {
@@ -145,21 +159,11 @@ export class CartService {
     return { items: [] };
   }
 
-  /** Used by checkout — validates stock and returns cart entity */
   async validateForCheckout(userId: string): Promise<Cart> {
     const cart = await this.cartRepo.findActiveByUser(userId);
     if (!cart || cart.items.length === 0) {
       throw new BadRequestException('Cart is empty');
     }
-
-    for (const item of cart.items.getItems()) {
-      if (item.variant.stock < item.quantity) {
-        throw new BadRequestException(
-          `Insufficient stock for variant ${item.variant.id}`,
-        );
-      }
-    }
-
     return cart;
   }
 

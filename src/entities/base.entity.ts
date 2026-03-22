@@ -1,9 +1,11 @@
 import { OptionalProps, PrimaryKey, Property } from '@mikro-orm/core';
 import { uuidv7 } from 'uuidv7';
 
+export type BaseOptionalProps = 'id' | 'createdAt' | 'updatedAt' | 'variantLabel' | 'displayTitle';
+
 export abstract class BaseEntity {
   /** Mark auto-generated fields as optional so em.create() doesn't require them */
-  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt';
+  [OptionalProps]?: BaseOptionalProps;
 
   @PrimaryKey({ type: 'uuid', onCreate: () => uuidv7() })
   id: string = uuidv7();

@@ -34,7 +34,12 @@ export class CustomOrderService {
         input: {
             description?: string;
             colorPreference?: string;
+            patternPreference?: string;
             size?: string;
+            sleeved?: boolean;
+            length?: string;
+            customLength?: number;
+            customWidth?: number;
             ageGroup?: string;
             gender?: string;
         },
@@ -51,10 +56,12 @@ export class CustomOrderService {
             user,
             description: input.description,
             colorPreference: input.colorPreference,
-            size: input.size as any,
-            ageGroup: input.ageGroup as any,
+            sizeLabel: input.size as any,
+            patternPreference: input.patternPreference,
+            // ageGroup: input.ageGroup as any,
             gender: input.gender as any,
             referenceImageUrls,
+            status: CustomOrderStatus.PENDING
         });
 
         await this.em.flush();
@@ -281,8 +288,8 @@ export class CustomOrderService {
 
         const sizeLabel = [
             order.gender,
-            order.ageGroup,
-            order.size?.toUpperCase(),
+           // order.ageGroup,
+            order.sizeLabel?.toUpperCase(),
         ]
             .filter(Boolean)
             .join(' / ') || 'Not specified';

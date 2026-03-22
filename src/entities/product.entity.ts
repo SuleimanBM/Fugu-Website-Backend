@@ -1,42 +1,46 @@
-import { Entity, OptionalProps, Property, OneToMany, Collection, Index } from '@mikro-orm/core';
+import {
+  Cascade,
+  Collection,
+  Entity,
+  Enum,
+  OneToMany,
+  OptionalProps,
+  Property,
+} from '@mikro-orm/core';
 import { SoftDeleteEntity } from './softDelete.entity';
 import { ProductVariant } from './productVariant.entity';
 import { ProductRepository } from '../repositories/product.repository';
+import { ProductType } from '../enums/productType.enum';
+import { Pattern } from '../enums/pattern.enum';
 
-@Index({ name: 'product_fulltext_idx', properties: ['title', 'description'], type: 'fulltext' })
+export enum FuguGender {
+  MALE   = 'male',
+  FEMALE = 'female',
+}
+
 @Entity({ repository: () => ProductRepository })
 export class Product extends SoftDeleteEntity {
- 
-  @Property()
-  title!: string;
+
+  @Enum({items: () => ProductType, nullable: true})
+  productType!: ProductType;
+
+  @Enum({ items: () => Pattern, nullable: true })
+  pattern?: Pattern;
+
+  @Property({ nullable: true })
+  patternOther?: string;
+
+  @Enum({ items: () => FuguGender, nullable: true })
+  gender?: FuguGender;
+
+  @Property({ columnType: 'decimal', precision: 10, scale: 2, nullable: true })
+  hatAddonPrice?: number;
 
   @Property({ unique: true })
   slug!: string;
 
-  @Property({ columnType: 'text' })
-  description!: string;
-
-  /** Base price in GHS — the price shown on the product card */
-  @Property({ columnType: 'decimal', precision: 10, scale: 2 })
-  price!: number;
-
-  /** Currency is always GHS for this store */
-  @Property({ default: 'GHS' })
-  currency?: string = 'GHS';
-
-  /**
-   * Product-level images (CDN URLs). Each variant may also have its own images.
-   * The first image is used as the card thumbnail.
-   */
   @Property({ columnType: 'jsonb', nullable: true })
   images: string[] = [];
-
-  /**
-   * Category names as a string array. Stored denormalized for fast filtering.
-   * Example: ['Smock', 'Traditional', 'Men']
-   */
-  @Property({ columnType: 'jsonb', nullable: true })
-  categories: string[] = [];
 
   @Property({ default: false })
   featured: boolean = false;
@@ -44,24 +48,53 @@ export class Product extends SoftDeleteEntity {
   @Property({ default: true })
   isActive?: boolean = true;
 
-  @OneToMany(() => ProductVariant, v => v.product, { orphanRemoval: true })
+  @OneToMany(() => ProductVariant, v => v.product, {
+    cascade: [Cascade.ALL],
+    orphanRemoval: true,
+  })
   variants = new Collection<ProductVariant>(this);
 
-  /** Maps to frontend Product type */
-  toDto(variants?: ProductVariant[]) {
+  get displayTitle(): string {
+    const patternLabel =
+      this.pattern === Pattern.OTHER
+        ? (this.patternOther ?? 'Custom')
+        : this.pattern === Pattern.CHECK_CHECK
+        ? 'Check-Check'
+        : this.pattern === Pattern.STRIPE
+        ? 'Stripe'
+        : '';
+
+    switch (this.productType) {
+      case ProductType.FUGU:
+        return this.gender === FuguGender.FEMALE
+          ? `${patternLabel} Fugu — Women's`.trim()
+          : `${patternLabel} Fugu — Men's`.trim();
+      case ProductType.CLOTH:
+        return patternLabel ? `${patternLabel} Fugu Cloth` : 'Fugu Cloth';
+      case ProductType.ACCESSORY:
+        return 'Fugu Hat';
+      default:
+        return 'Fugu Product';
+    }
+  }
+
+  toDto() {
     return {
-      id: this.id,
-      slug: this.slug,
-      title: this.title,
-      description: this.description,
-      price: Number(this.price),
-      currency: 'GHS' as const,
-      images: this.images ?? [],
-      categories: this.categories ?? [],
-      featured: this.featured,
-      variants: (variants ?? this.variants.getItems()).map(v => v.toDto()),
-      created_at: this.createdAt.toISOString(),
-      updated_at: this.updatedAt?.toISOString(),
+      id:            this.id,
+      slug:          this.slug,
+      productType:   this.productType,
+      pattern:       this.pattern,
+      patternOther:  this.patternOther,
+      gender:        this.gender,
+      hatAddonPrice: this.hatAddonPrice != null ? Number(this.hatAddonPrice) : null,
+      displayTitle:  this.displayTitle,
+      images:        this.images ?? [],
+      featured:      this.featured,
+      isActive:      this.isActive,
+      variants:      this.variants.isInitialized()
+        ? this.variants.getItems().filter(v => v.isActive).map(v => v.toDto())
+        : [],
+      createdAt: this.createdAt.toISOString(),
     };
   }
 }

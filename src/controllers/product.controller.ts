@@ -7,54 +7,39 @@ import { ProductService } from '../services/product.service';
 export class ProductsController {
   constructor(private readonly productService: ProductService) {}
 
-  /**
-   * GET /api/products/featured
-   * Must be defined BEFORE /:slug to avoid route collision.
-   */
+  /** GET /api/products/featured — must come before /:slug */
   @Get('featured')
-  featured() {
+  getFeatured() {
     return this.productService.featured();
   }
 
-  /**
-   * GET /api/products/categories
-   * Returns string[] — list of all category names.
-   */
+  /** GET /api/products/categories */
   @Get('categories')
-  categories() {
+  getCategories() {
     return this.productService.categories();
   }
 
   /**
-   * GET /api/products
-   * Query: q, category, minPrice, maxPrice, size, page, limit
-   * Returns { items, total, page, limit }
+   * GET /api/products?productType=fugu&q=&page=1&limit=12&featured=
    */
   @Get()
   list(
-    @Query('q') q?: string,
-    @Query('category') category?: string,
-    @Query('minPrice') minPrice?: string,
-    @Query('maxPrice') maxPrice?: string,
-    @Query('size') size?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('q')           q?:           string,
+    @Query('productType') productType?: string,
+    @Query('page')        page?:        string,
+    @Query('limit')       limit?:       string,
+    @Query('featured')    featured?:    string,
   ) {
     return this.productService.list({
       q,
-      category,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined,
-      size,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 12,
+      productType,
+      page:     page    ? Number(page)    : undefined,
+      limit:    limit   ? Number(limit)   : undefined,
+      featured: featured !== undefined ? featured === 'true' : undefined,
     });
   }
 
-  /**
-   * GET /api/products/:slug
-   * Returns a single Product with full variants array.
-   */
+  /** GET /api/products/:slug */
   @Get(':slug')
   getBySlug(@Param('slug') slug: string) {
     return this.productService.getBySlug(slug);

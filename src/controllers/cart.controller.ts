@@ -20,10 +20,7 @@ import { CartService } from '../services/cart.service';
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  /**
-   * GET /api/cart
-   * Returns: { items: CartItem[] }
-   */
+  /** GET /api/cart */
   @Get()
   getCart(@Req() req: any) {
     return this.cartService.getCart(req.user.id);
@@ -31,27 +28,32 @@ export class CartController {
 
   /**
    * POST /api/cart/items
-   * Body: { product_id, variant_id, quantity }
-   * Returns: { items: CartItem[] }
+   * Body: { product_id, variant_id, quantity, with_hat?, custom_length?, custom_width? }
    */
   @Post('items')
   addItem(
     @Req() req: any,
-    @Body() body: { product_id: string; variant_id: string; quantity?: number },
+    @Body()
+    body: {
+      product_id:     string;
+      variant_id:     string;
+      quantity?:      number;
+      with_hat?:      boolean;
+      custom_length?: number;
+      custom_width?:  number;
+    },
   ) {
-    return this.cartService.addItem(
-      req.user.id,
-      body.product_id,
-      body.variant_id,
-      body.quantity ?? 1,
-    );
+    return this.cartService.addItem(req.user.id, {
+      productId:    body.product_id,
+      variantId:    body.variant_id,
+      quantity:     body.quantity ?? 1,
+      withHat:      body.with_hat,
+      customLength: body.custom_length,
+      customWidth:  body.custom_width,
+    });
   }
 
-  /**
-   * PATCH /api/cart/items/:itemId
-   * Body: { quantity }
-   * Returns: { items: CartItem[] }
-   */
+  /** PATCH /api/cart/items/:itemId  { quantity } */
   @Patch('items/:itemId')
   updateItem(
     @Req() req: any,
@@ -61,19 +63,13 @@ export class CartController {
     return this.cartService.updateItem(req.user.id, itemId, body.quantity);
   }
 
-  /**
-   * DELETE /api/cart/items/:itemId
-   * Returns: { items: CartItem[] }
-   */
+  /** DELETE /api/cart/items/:itemId */
   @Delete('items/:itemId')
   removeItem(@Req() req: any, @Param('itemId') itemId: string) {
     return this.cartService.removeItem(req.user.id, itemId);
   }
 
-  /**
-   * DELETE /api/cart
-   * Returns: { items: [] }
-   */
+  /** DELETE /api/cart */
   @Delete()
   clearCart(@Req() req: any) {
     return this.cartService.clearCart(req.user.id);

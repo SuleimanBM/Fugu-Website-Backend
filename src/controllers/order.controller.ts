@@ -13,7 +13,6 @@ import { OrderService } from '../services/order.service';
 
 @ApiTags('orders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller()
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
@@ -23,6 +22,7 @@ export class OrderController {
    * Returns all orders for the authenticated user.
    */
   @Get('orders/me')
+  @UseGuards(JwtAuthGuard)
   listMyOrders(@Req() req: any) {
     return this.orderService.listUserOrders(req.user.id);
   }
@@ -31,6 +31,7 @@ export class OrderController {
    * GET /api/orders/:id
    */
   @Get('orders/:id')
+  @UseGuards(JwtAuthGuard)
   getOrder(@Req() req: any, @Param('id') id: string) {
     return this.orderService.getOrder(id, req.user.id);
   }
@@ -43,6 +44,7 @@ export class OrderController {
    * Returns the Order. Frontend then calls /checkout/initiate with the order id.
    */
   @Post('checkout/transaction')
+  @UseGuards(JwtAuthGuard)
   createOrder(
     @Req() req: any,
     @Body()
@@ -69,6 +71,7 @@ export class OrderController {
    * Returns: { authorization_url }
    */
   @Post('checkout/initiate')
+  @UseGuards(JwtAuthGuard)
   initiatePayment(
     @Req() req: any,
     @Body() body: { order_id: string },
@@ -89,6 +92,6 @@ export class OrderController {
     @Req() req: any,
     @Body() body: { reference: string },
   ) {
-    return this.orderService.verifyPayment(body.reference, req.user.id);
+    return this.orderService.verifyPayment(body.reference);
   }
 }

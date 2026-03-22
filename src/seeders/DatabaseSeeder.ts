@@ -1,135 +1,172 @@
-import type { EntityManager } from '@mikro-orm/postgresql';
+import { EntityManager } from '@mikro-orm/core';
 import { Seeder } from '@mikro-orm/seeder';
-import { Category } from '../entities/category.entity';
-import { Product } from '../entities/product.entity';
+import { Product, FuguGender } from '../entities/product.entity';
 import { ProductVariant } from '../entities/productVariant.entity';
-import { Size } from '../enums/sizes.enum';
-
-const CATEGORIES = [
-  { name: 'Men', slug: 'men' },
-  { name: 'Women', slug: 'women' },
-  { name: 'Kids', slug: 'kids' },
-  { name: 'Traditional', slug: 'traditional' },
-  { name: 'Modern', slug: 'modern' },
-];
-
-const PRODUCTS = [
-  {
-    title: 'Classic Fugu Smock',
-    description:
-      'A timeless hand-woven Ghanaian smock in the traditional northern style. Made from 100% strip-woven cotton with geometric embroidery at the collar.',
-    price: 250,
-    categories: ['Men', 'Traditional'],
-    featured: true,
-    images: [
-      'https://placehold.co/800x800/2d2d2d/ffffff?text=Classic+Fugu',
-      'https://placehold.co/800x800/3d3d3d/ffffff?text=Classic+Fugu+2',
-    ],
-    variants: [
-      { name: 'Small / White', size: Size.SMALL, color: '#FFFFFF', stock: 10 },
-      { name: 'Medium / White', size: Size.MEDIUM, color: '#FFFFFF', stock: 15 },
-      { name: 'Large / White', size: Size.LARGE, color: '#FFFFFF', stock: 12 },
-      { name: 'Medium / Black', size: Size.MEDIUM, color: '#1a1a1a', stock: 8 },
-      { name: 'Large / Black', size: Size.LARGE, color: '#1a1a1a', stock: 6 },
-    ],
-  },
-  {
-    title: 'Embroidered Ceremonial Smock',
-    description:
-      'An elaborate smock featuring intricate hand-embroidery, traditionally worn at festivals, funerals, and chieftaincy ceremonies.',
-    price: 420,
-    categories: ['Men', 'Traditional'],
-    featured: true,
-    images: [
-      'https://placehold.co/800x800/4a3728/ffffff?text=Ceremonial+Smock',
-    ],
-    variants: [
-      { name: 'Medium / Brown', size: Size.MEDIUM, color: '#8B6347', stock: 5 },
-      { name: 'Large / Brown', size: Size.LARGE, color: '#8B6347', stock: 4 },
-      { name: 'XL / Brown', size: Size.XTRA_LARGE, color: '#8B6347', stock: 3 },
-    ],
-  },
-  {
-    title: "Women's Peplum Fugu Top",
-    description:
-      'A contemporary peplum silhouette crafted from authentic strip-woven smock fabric. Pairs beautifully with trousers or a skirt.',
-    price: 180,
-    categories: ['Women', 'Modern'],
-    featured: false,
-    images: [
-      'https://placehold.co/800x800/c9a96e/ffffff?text=Peplum+Top',
-    ],
-    variants: [
-      { name: 'Small / Multicolour', size: Size.SMALL, color: '#c9a96e', stock: 7 },
-      { name: 'Medium / Multicolour', size: Size.MEDIUM, color: '#c9a96e', stock: 9 },
-    ],
-  },
-  {
-    title: 'Short-Sleeve Casual Smock',
-    description:
-      'A lighter, hip-length smock perfect for everyday wear. Short sleeves and a relaxed cut make it easy to style.',
-    price: 160,
-    categories: ['Men', 'Modern'],
-    featured: true,
-    images: [
-      'https://placehold.co/800x800/556b2f/ffffff?text=Casual+Smock',
-    ],
-    variants: [
-      { name: 'Small / Green', size: Size.SMALL, color: '#556b2f', stock: 12 },
-      { name: 'Medium / Green', size: Size.MEDIUM, color: '#556b2f', stock: 14 },
-      { name: 'Large / Green', size: Size.LARGE, color: '#556b2f', stock: 10 },
-    ],
-  },
-];
+import { ProductType } from '../enums/productType.enum';
+import { Pattern } from '../enums/pattern.enum';
 
 export class DatabaseSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
-    // Seed categories
-    const categoryMap = new Map<string, Category>();
-    for (const c of CATEGORIES) {
-      const existing = await em.findOne(Category, { slug: c.slug });
-      if (!existing) {
-        const cat = em.create(Category, c);
-        categoryMap.set(c.name, cat);
-      } else {
-        categoryMap.set(c.name, existing);
-      }
-    }
-    await em.flush();
+    // Clear existing products for clean seed
+    await em.nativeDelete(ProductVariant, {});
+    await em.nativeDelete(Product, {});
 
-    // Seed products
-    for (const p of PRODUCTS) {
-      const existing = await em.findOne(Product, {
-        slug: p.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      });
-      if (existing) continue;
+    const products: {
+      productType: ProductType;
+      pattern: Pattern;
+      patternOther?: string;
+      gender?: FuguGender;
+      hatAddonPrice?: number;
+      images: string[];
+      featured: boolean;
+      slug: string;
+      variants: {
+        price: number;
+        sizeLabel?: string;
+        sizeRange?: string;
+        sleeved?: boolean;
+        length?: string;
+        customLength?: number;
+        pricePerYard?: number;
+      }[];
+    }[] = [
+      // ── Male Fugus ────────────────────────────────────────────────────
+      {
+        productType:   ProductType.FUGU,
+        pattern:       Pattern.STRIPE,
+        gender:        FuguGender.MALE,
+        hatAddonPrice: 50,
+        featured:      true,
+        slug:          'stripe-fugu-mens-seed',
+        images:        ['https://placehold.co/800x800/2d2d2d/ffffff?text=Stripe+Fugu'],
+        variants: [
+          { price: 220, sizeLabel: 'S',  sizeRange: '34-36', sleeved: true  },
+          { price: 190, sizeLabel: 'S',  sizeRange: '34-36', sleeved: false },
+          { price: 240, sizeLabel: 'M',  sizeRange: '37-39', sleeved: true  },
+          { price: 210, sizeLabel: 'M',  sizeRange: '37-39', sleeved: false },
+          { price: 260, sizeLabel: 'L',  sizeRange: '40-42', sleeved: true  },
+          { price: 230, sizeLabel: 'L',  sizeRange: '40-42', sleeved: false },
+          { price: 280, sizeLabel: 'XL', sizeRange: '43-45', sleeved: true  },
+          { price: 250, sizeLabel: 'XL', sizeRange: '43-45', sleeved: false },
+          { price: 265, sizeLabel: '38', sizeRange: '38',    sleeved: true  },
+          { price: 235, sizeLabel: '38', sizeRange: '38',    sleeved: false },
+          { price: 275, sizeLabel: '40', sizeRange: '40',    sleeved: true  },
+          { price: 245, sizeLabel: '40', sizeRange: '40',    sleeved: false },
+        ],
+      },
+      {
+        productType:   ProductType.FUGU,
+        pattern:       Pattern.CHECK_CHECK,
+        gender:        FuguGender.MALE,
+        hatAddonPrice: 50,
+        featured:      true,
+        slug:          'check-check-fugu-mens-seed',
+        images:        ['https://placehold.co/800x800/1a1a2e/ffffff?text=Check-Check+Fugu'],
+        variants: [
+          { price: 250, sizeLabel: 'S',  sizeRange: '34-36', sleeved: true  },
+          { price: 220, sizeLabel: 'S',  sizeRange: '34-36', sleeved: false },
+          { price: 270, sizeLabel: 'M',  sizeRange: '37-39', sleeved: true  },
+          { price: 240, sizeLabel: 'M',  sizeRange: '37-39', sleeved: false },
+          { price: 290, sizeLabel: 'L',  sizeRange: '40-42', sleeved: true  },
+          { price: 260, sizeLabel: 'L',  sizeRange: '40-42', sleeved: false },
+          { price: 310, sizeLabel: 'XL', sizeRange: '43-45', sleeved: true  },
+          { price: 280, sizeLabel: 'XL', sizeRange: '43-45', sleeved: false },
+        ],
+      },
 
-      const slug = p.title
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-');
+      // ── Female Fugus ──────────────────────────────────────────────────
+      {
+        productType:   ProductType.FUGU,
+        pattern:       Pattern.STRIPE,
+        gender:        FuguGender.FEMALE,
+        hatAddonPrice: 50,
+        featured:      false,
+        slug:          'stripe-fugu-womens-seed',
+        images:        ['https://placehold.co/800x800/8b4513/ffffff?text=Stripe+Women'],
+        variants: [
+          { price: 200, length: 'short'  },
+          { price: 230, length: 'medium' },
+          { price: 260, length: 'long'   },
+          { price: 280, length: 'custom' },
+        ],
+      },
+      {
+        productType:   ProductType.FUGU,
+        pattern:       Pattern.CHECK_CHECK,
+        gender:        FuguGender.FEMALE,
+        featured:      false,
+        slug:          'check-check-fugu-womens-seed',
+        images:        ['https://placehold.co/800x800/2f4f4f/ffffff?text=Check+Women'],
+        variants: [
+          { price: 220, length: 'short'  },
+          { price: 250, length: 'medium' },
+          { price: 280, length: 'long'   },
+          { price: 300, length: 'custom' },
+        ],
+      },
 
+      // ── Cloth ─────────────────────────────────────────────────────────
+      {
+        productType: ProductType.CLOTH,
+        pattern:     Pattern.STRIPE,
+        featured:    false,
+        slug:        'stripe-cloth-seed',
+        images:      ['https://placehold.co/800x800/d2691e/ffffff?text=Stripe+Cloth'],
+        variants: [
+          { price: 45, pricePerYard: 45 },
+        ],
+      },
+      {
+        productType: ProductType.CLOTH,
+        pattern:     Pattern.CHECK_CHECK,
+        featured:    false,
+        slug:        'check-check-cloth-seed',
+        images:      ['https://placehold.co/800x800/556b2f/ffffff?text=Check+Cloth'],
+        variants: [
+          { price: 55, pricePerYard: 55 },
+        ],
+      },
+
+      // ── Accessory ─────────────────────────────────────────────────────
+      {
+        productType: ProductType.ACCESSORY,
+        pattern:     Pattern.STRIPE,
+        featured:    false,
+        slug:        'fugu-hat-seed',
+        images:      ['https://placehold.co/800x800/4a4a4a/ffffff?text=Fugu+Hat'],
+        variants: [
+          { price: 80 },
+        ],
+      },
+    ];
+
+    for (const p of products) {
       const product = em.create(Product, {
-        title: p.title,
-        description: p.description,
-        price: p.price,
-        slug,
-        images: p.images,
-        categories: p.categories,
-        featured: p.featured,
+        productType:   p.productType,
+        pattern:       p.pattern,
+        patternOther:  p.patternOther,
+        gender:        p.gender,
+        hatAddonPrice: p.hatAddonPrice,
+        images:        p.images,
+        featured:      p.featured,
+        slug:          p.slug,
       });
 
       for (const v of p.variants) {
         em.create(ProductVariant, {
           product,
-          ...v,
-          priceDiff: 0,
+          price:        v.price,
+          sizeLabel:    v.sizeLabel,
+          sizeRange:    v.sizeRange,
+          sleeved:      v.sleeved,
+          length:       v.length,
+          customLength: v.customLength,
+          pricePerYard: v.pricePerYard,
         });
       }
     }
 
     await em.flush();
-    console.log('✓ Database seeded successfully');
+    console.log('✅ Seeded products with new schema');
   }
 }

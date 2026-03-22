@@ -49,9 +49,13 @@ export class CustomOrderController {
         body: {
             description?: string;
             colorPreference?: string;
-            size?: string;
-            ageGroup?: string;
             gender?: string;
+            patternPreference?: string;
+            sizeLabel?: string;
+            sleeved?: string;  // comes as string from FormData, parse below
+            length?: string;
+            customLength?: string;
+            customWidth?: string;
         },
     ) {
         return this.customOrderService.create(
@@ -59,9 +63,13 @@ export class CustomOrderController {
             {
                 description: body.description,
                 colorPreference: body.colorPreference,
-                size: body.size,
-                ageGroup: body.ageGroup,
                 gender: body.gender,
+                patternPreference: body.patternPreference,
+                size: body.sizeLabel,
+                sleeved: body.sleeved !== undefined ? body.sleeved === 'true' : undefined,
+                length: body.length,
+                customLength: body.customLength ? parseFloat(body.customLength) : undefined,
+                customWidth: body.customWidth ? parseFloat(body.customWidth) : undefined,
             },
             files ?? [],
         );

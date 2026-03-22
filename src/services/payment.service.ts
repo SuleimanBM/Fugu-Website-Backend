@@ -40,7 +40,10 @@ export class PaymentService {
     try {
       const res = await axios.get(
         `${this.base}/transaction/verify/${reference}`,
-        { headers: this.headers },
+        {
+          headers: this.headers,
+          timeout: 15000,
+        },
       );
       return res.data.data as {
         status: string;

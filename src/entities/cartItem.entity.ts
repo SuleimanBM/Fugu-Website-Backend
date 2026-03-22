@@ -5,39 +5,46 @@ import { ProductVariant } from './productVariant.entity';
 
 @Entity()
 export class CartItem extends BaseEntity {
-  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt';
+
   @ManyToOne(() => Cart)
   cart!: Cart;
 
-  /**
-   * We keep the FK relation to ProductVariant for stock validation,
-   * but also store product_id and variant_id as plain columns so we
-   * can map directly to the frontend CartItem type without extra joins.
-   */
   @ManyToOne(() => ProductVariant)
   variant!: ProductVariant;
 
+  /** Stored as plain column for direct mapping to frontend without joins */
   @Property()
   productId!: string;
 
   @Property()
   quantity!: number;
 
-  /**
-   * Price captured at the time the item was added — protects the customer
-   * from price changes between add-to-cart and checkout.
-   */
+  /** Price captured at time of adding — protects against price changes */
   @Property({ columnType: 'decimal', precision: 10, scale: 2 })
   priceAtAdd!: number;
 
-  /** Maps to frontend CartItem type */
+  /** Hat add-on was included — fugu only */
+  @Property({ default: false })
+  withHat: boolean = false;
+
+  /** Female fugu custom length in cm */
+  @Property({ columnType: 'decimal', precision: 6, scale: 1, nullable: true })
+  customLength?: number;
+
+  /** Female fugu custom width in cm */
+  @Property({ columnType: 'decimal', precision: 6, scale: 1, nullable: true })
+  customWidth?: number;
+
   toDto() {
     return {
-      id: this.id,
-      product_id: this.productId,
-      variant_id: this.variant,
-      quantity: this.quantity,
-      priceAtAdd: Number(this.priceAtAdd),
+      id:           this.id,
+      product_id:   this.productId,
+      variant_id:   this.variant,
+      quantity:     this.quantity,
+      priceAtAdd:   Number(this.priceAtAdd),
+      withHat:      this.withHat,
+      customLength: this.customLength != null ? Number(this.customLength) : null,
+      customWidth:  this.customWidth != null ? Number(this.customWidth) : null,
     };
   }
 }

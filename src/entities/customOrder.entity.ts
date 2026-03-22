@@ -3,89 +3,83 @@ import { BaseEntity } from './base.entity';
 import { User } from './user.entity';
 import { CustomOrderStatus } from '../enums/customOrderStatus.enum';
 
-export enum CustomOrderSize {
-    S = 's',
-    M = 'm',
-    L = 'l',
-    XL = 'xl',
-}
-
-export enum CustomOrderAgeGroup {
-    ADULT = 'adult',
-    KID = 'kid',
-}
-
-export enum CustomOrderGender {
-    MEN = 'men',
-    WOMEN = 'women',
-}
-
 @Entity()
 export class CustomOrder extends BaseEntity {
 
-    @ManyToOne(() => User)
-    user!: User;
+  @ManyToOne(() => User)
+  user!: User;
 
-    // ── Customer-provided fields ───────────────────────────────────────────────
+  // ── Customer-provided fields ─────────────────────────────────────────────
 
-    @Property({ columnType: 'text', nullable: true })
-    description?: string;
+  @Property({ columnType: 'text', nullable: true })
+  description?: string;
 
-    @Property({ nullable: true })
-    colorPreference?: string;
+  @Property({ nullable: true })
+  colorPreference?: string;
 
-    /**
-     * Size — either a standard size or null if the customer only specifies
-     * age group / gender without a specific size.
-     */
-    @Enum({ items: () => CustomOrderSize, nullable: true })
-    size?: CustomOrderSize;
+  /** 'male' | 'female' */
+  @Property({ nullable: true })
+  gender?: string;
 
-    @Enum({ items: () => CustomOrderAgeGroup, nullable: true })
-    ageGroup?: CustomOrderAgeGroup;
+  /** 'stripe' | 'check-check' | 'no-preference' */
+  @Property({ nullable: true })
+  patternPreference?: string;
 
-    @Enum({ items: () => CustomOrderGender, nullable: true })
-    gender?: CustomOrderGender;
+  // Male fugu fields
+  @Property({ nullable: true })
+  sizeLabel?: string;
 
-    /**
-     * Cloudinary URLs for reference photos — up to 3.
-     */
-    @Property({ columnType: 'jsonb', nullable: true })
-    referenceImageUrls: string[] = [];
+  /** true = sleeved, false = sleeveless */
+  @Property({ nullable: true })
+  sleeved?: boolean;
 
-    // ── Admin-managed fields ───────────────────────────────────────────────────
+  // Female fugu fields
+  @Property({ nullable: true })
+  length?: string;
 
-    @Enum(() => CustomOrderStatus)
-    status?: CustomOrderStatus = CustomOrderStatus.PENDING;
+  @Property({ columnType: 'decimal', precision: 6, scale: 1, nullable: true })
+  customLength?: number;
 
-    /** Price set by admin after reviewing the request — in GHS */
-    @Property({ columnType: 'decimal', precision: 10, scale: 2, nullable: true })
-    quotedPrice?: number;
+  @Property({ columnType: 'decimal', precision: 6, scale: 1, nullable: true })
+  width?: number;
 
-    @Property({ columnType: 'text', nullable: true })
-    adminNotes?: string;
+  @Property({ columnType: 'jsonb', nullable: true })
+  referenceImageUrls: string[] = [];
 
-    @Property({ nullable: true })
-    paymentReference?: string;
+  // ── Admin-managed fields ─────────────────────────────────────────────────
 
-    // ── DTO ────────────────────────────────────────────────────────────────────
+  @Enum(() => CustomOrderStatus)
+  status: CustomOrderStatus = CustomOrderStatus.PENDING;
 
-    toDto() {
-        return {
-            id: this.id,
-            user_id: this.user.id,
-            description: this.description,
-            color_preference: this.colorPreference,
-            size: this.size,
-            age_group: this.ageGroup,
-            gender: this.gender,
-            reference_image_urls: this.referenceImageUrls,
-            status: this.status,
-            quoted_price: this.quotedPrice ? Number(this.quotedPrice) : null,
-            admin_notes: this.adminNotes,
-            payment_reference: this.paymentReference,
-            created_at: this.createdAt.toISOString(),
-            updated_at: this.updatedAt.toISOString(),
-        };
-    }
+  @Property({ columnType: 'decimal', precision: 10, scale: 2, nullable: true })
+  quotedPrice?: number;
+
+  @Property({ columnType: 'text', nullable: true })
+  adminNotes?: string;
+
+  @Property({ nullable: true })
+  paymentReference?: string;
+
+  toDto() {
+    return {
+      id:                   this.id,
+      user_id:              this.user.id,
+      description:          this.description,
+      color_preference:     this.colorPreference,
+      gender:               this.gender,
+      pattern_preference:   this.patternPreference,
+      size_label:           this.sizeLabel,
+      sleeved:              this.sleeved,
+      length:               this.length,
+      custom_length:        this.customLength != null ? Number(this.customLength) : null,
+      width:                this.width != null ? Number(this.width) : null,
+      reference_image_urls: this.referenceImageUrls ?? [],
+      status:               this.status,
+      quoted_price:         this.quotedPrice ? Number(this.quotedPrice) : null,
+      admin_notes:          this.adminNotes,
+      payment_reference:    this.paymentReference,
+      created_at:           this.createdAt.toISOString(),
+      updated_at:           this.updatedAt.toISOString(),
+    };
+  }
 }
